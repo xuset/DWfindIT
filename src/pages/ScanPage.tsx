@@ -14,7 +14,7 @@ export const ScanPage: React.FC = () => {
   const navigate = useNavigate();
   const { selectedStore, isLoading: isStoreLoading } = useStore();
   const { lists, fetchLists, currentList, setCurrentList } = useListStore();
-  const { addItem, clearRecentScan } = useScanItemStore();
+  const { addItem, updateItem, clearRecentScan } = useScanItemStore();
 
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
@@ -109,6 +109,7 @@ export const ScanPage: React.FC = () => {
           .eq('id', existingItem.id);
         if (updateError) throw updateError;
         setScanSuccess(`Updated ${barcode} quantity to ${newQty}`);
+        setLastScannedPart({ ...existingItem, quantity: newQty });
       } else {
         // FIXED: Include ALL fields that exist in your scan_items table
         const scanItemData = {
@@ -123,9 +124,14 @@ export const ScanPage: React.FC = () => {
         };
 
         console.log('💾 Saving scan item with exact data:', scanItemData);
-        
-        await addItem(scanItemData);
-        setScanSuccess(`Added ${barcode} to list`);
+
+        const newItem = await addItem(scanItemData);
+        if (newItem) {
+          setLastScannedPart(newItem);
+          setScanSuccess(`Added ${barcode} to list`);
+        } else {
+          throw new Error('Failed to add item');
+        }
       }
     } catch (error: any) {
       console.error('Scan processing error:', error);
@@ -212,8 +218,8 @@ export const ScanPage: React.FC = () => {
           error={scanError}
           clearResult={clearRecentScan}
           onSave={(updates) => {
-            if (lastScannedPart) {
-              addItem({ ...lastScannedPart, ...updates });
+            if (lastScannedPart?.id) {
+              updateItem(lastScannedPart.id, updates);
             }
           }}
         />
