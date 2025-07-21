@@ -212,8 +212,10 @@ export const ScanPage: React.FC = () => {
           error={scanError}
           clearResult={clearRecentScan}
           onSave={(updates) => {
-            if (lastScannedPart) {
-              addItem({ ...lastScannedPart, ...updates });
+            if (lastScannedPart && currentList) {
+              // Include the current list ID when saving manually so RLS policies
+              // that rely on list ownership pass correctly
+              addItem({ ...lastScannedPart, ...updates, list_id: currentList.id });
             }
           }}
         />
